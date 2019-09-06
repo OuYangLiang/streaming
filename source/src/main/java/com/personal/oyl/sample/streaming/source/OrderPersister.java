@@ -68,7 +68,7 @@ public final class OrderPersister {
 
     }
 
-    private void save(Order order) throws SQLException {
+    public void save(Order order) throws SQLException {
         this.open();
         conn.setAutoCommit(false);
         PreparedStatement p = null;

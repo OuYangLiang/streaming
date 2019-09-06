@@ -6,6 +6,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -72,8 +73,18 @@ public class OrderGenerator {
         List<Future<RecordMetadata>> futures = new LinkedList<>();
 
         OrderGenerator gen = new OrderGenerator();
+        OrderPersister persister = new OrderPersister();
+
         while (!Thread.currentThread().isInterrupted()) {
             Order order = gen.next();
+            try {
+                persister.save(order);
+            } catch (SQLException e) {
+                e.printStackTrace();
+
+                continue;
+            }
+
             ProducerRecord<String, String> record = new ProducerRecord<>(
                     "order_queue", order.getCustId() & 15, null, null, order.json(), null);
             futures.add(producer.send(record));
