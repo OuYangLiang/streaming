@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.Date;
 
 /**
  * @author OuYang Liang
@@ -20,8 +21,8 @@ public class Order implements Serializable {
     private BigDecimal discount;
     private BigDecimal totalAmt;
     private Integer custId;
-    private Long orderTime;
-    private Long payTime;
+    private Date orderTime;
+    private Date payTime;
 
     public Integer getOrderId() {
         return orderId;
@@ -71,19 +72,19 @@ public class Order implements Serializable {
         this.custId = custId;
     }
 
-    public Long getOrderTime() {
+    public Date getOrderTime() {
         return orderTime;
     }
 
-    public void setOrderTime(Long orderTime) {
+    public void setOrderTime(Date orderTime) {
         this.orderTime = orderTime;
     }
 
-    public Long getPayTime() {
+    public Date getPayTime() {
         return payTime;
     }
 
-    public void setPayTime(Long payTime) {
+    public void setPayTime(Date payTime) {
         this.payTime = payTime;
     }
 

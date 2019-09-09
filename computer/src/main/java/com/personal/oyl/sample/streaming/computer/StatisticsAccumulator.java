@@ -9,7 +9,7 @@ import java.util.Set;
  */
 public class StatisticsAccumulator {
     private Long numOfOrders;
-    private BigDecimal numOfOrderAmt;
+    private BigDecimal orderAmt;
     private Set<Integer> orderedCustId;
 
     public Long getNumOfOrders() {
@@ -20,12 +20,12 @@ public class StatisticsAccumulator {
         this.numOfOrders = numOfOrders;
     }
 
-    public BigDecimal getNumOfOrderAmt() {
-        return numOfOrderAmt;
+    public BigDecimal getOrderAmt() {
+        return orderAmt;
     }
 
-    public void setNumOfOrderAmt(BigDecimal numOfOrderAmt) {
-        this.numOfOrderAmt = numOfOrderAmt;
+    public void setOrderAmt(BigDecimal orderAmt) {
+        this.orderAmt = orderAmt;
     }
 
     public Set<Integer> getOrderedCustId() {
@@ -38,7 +38,7 @@ public class StatisticsAccumulator {
 
     public Statistics toStatistics() {
         Statistics statistics = new Statistics();
-        statistics.setNumOfOrderAmt(this.getNumOfOrderAmt());
+        statistics.setOrderAmt(this.getOrderAmt());
         statistics.setNumOfOrders(this.getNumOfOrders());
         if (null != this.getOrderedCustId()) {
             statistics.setNumOfOrderedCustomers(Long.valueOf(this.getOrderedCustId().size()));

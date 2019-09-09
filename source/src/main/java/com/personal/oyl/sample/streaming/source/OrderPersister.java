@@ -10,7 +10,7 @@ import java.util.List;
  */
 public final class OrderPersister {
 
-    private static final String sql = "insert into `order`(order_id, prod_code, pay_amt, discount, total_amt, cust_id, order_time, pay_time) values(?,?,?,?,?,?,?,?);";
+    private static final String sql = "insert into `order`(prod_code, pay_amt, discount, total_amt, cust_id, order_time, pay_time) values(?,?,?,?,?,?,?);";
 
     private volatile static Connection conn = null;
 
@@ -44,19 +44,31 @@ public final class OrderPersister {
         PreparedStatement p = null;
 
         try {
-            p = conn.prepareStatement(sql);
+            p = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
 
             for (Order order : orders) {
-                p.setInt(1, order.getOrderId());
-                p.setString(2, order.getProductCode());
-                p.setBigDecimal(3, order.getPayAmt());
-                p.setBigDecimal(4, order.getDiscount());
-                p.setBigDecimal(5, order.getTotalAmt());
-                p.setInt(6, order.getCustId());
-                p.setTimestamp(7, new Timestamp(order.getOrderTime()));
-                p.setTimestamp(8, new Timestamp(order.getPayTime()));
+                p = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+
+                p.setString(1, order.getProductCode());
+                p.setBigDecimal(2, order.getPayAmt());
+                p.setBigDecimal(3, order.getDiscount());
+                p.setBigDecimal(4, order.getTotalAmt());
+                p.setInt(5, order.getCustId());
+                p.setTimestamp(6, new Timestamp(order.getOrderTime().getTime()));
+                p.setTimestamp(7, new Timestamp(order.getPayTime().getTime()));
 
                 p.executeUpdate();
+                ResultSet rs = null;
+
+                try {
+                    rs = p.getGeneratedKeys();
+                    rs.next();
+                    order.setOrderId(rs.getInt(1));
+                } finally {
+                    if (null != rs) {
+                        rs.close();
+                    }
+                }
             }
 
             conn.commit();
@@ -74,18 +86,29 @@ public final class OrderPersister {
         PreparedStatement p = null;
 
         try {
-            p = conn.prepareStatement(sql);
+            p = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
 
-            p.setInt(1, order.getOrderId());
-            p.setString(2, order.getProductCode());
-            p.setBigDecimal(3, order.getPayAmt());
-            p.setBigDecimal(4, order.getDiscount());
-            p.setBigDecimal(5, order.getTotalAmt());
-            p.setInt(6, order.getCustId());
-            p.setTimestamp(7, new Timestamp(order.getOrderTime()));
-            p.setTimestamp(8, new Timestamp(order.getPayTime()));
+            p.setString(1, order.getProductCode());
+            p.setBigDecimal(2, order.getPayAmt());
+            p.setBigDecimal(3, order.getDiscount());
+            p.setBigDecimal(4, order.getTotalAmt());
+            p.setInt(5, order.getCustId());
+            p.setTimestamp(6, new Timestamp(order.getOrderTime().getTime()));
+            p.setTimestamp(7, new Timestamp(order.getPayTime().getTime()));
 
             p.executeUpdate();
+            ResultSet rs = null;
+
+            try {
+                rs = p.getGeneratedKeys();
+                rs.next();
+                order.setOrderId(rs.getInt(1));
+            } finally {
+                if (null != rs) {
+                    rs.close();
+                }
+            }
+
             conn.commit();
         } finally {
             if (null != p) {

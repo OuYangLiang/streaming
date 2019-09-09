@@ -16,7 +16,7 @@ public class Statistics implements Serializable {
 
     private String minute;
     private Long numOfOrders;
-    private BigDecimal numOfOrderAmt;
+    private BigDecimal orderAmt;
     private Long numOfOrderedCustomers;
 
     public String getMinute() {
@@ -35,12 +35,12 @@ public class Statistics implements Serializable {
         this.numOfOrders = numOfOrders;
     }
 
-    public BigDecimal getNumOfOrderAmt() {
-        return numOfOrderAmt;
+    public BigDecimal getOrderAmt() {
+        return orderAmt;
     }
 
-    public void setNumOfOrderAmt(BigDecimal numOfOrderAmt) {
-        this.numOfOrderAmt = numOfOrderAmt;
+    public void setOrderAmt(BigDecimal orderAmt) {
+        this.orderAmt = orderAmt;
     }
 
     public Long getNumOfOrderedCustomers() {

@@ -177,3 +177,11 @@ create table `order`(
     primary key (order_id)
 )engine=innodb;
 ```
+
+## 验证
+
+```sql
+select order_time, count(*) as number, sum(pay_amt) as total from 
+(select date_format(order_time, '%Y-%m-%d %H:%i') as order_time, pay_amt from `order`) t 
+group by order_time;
+```

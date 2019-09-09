@@ -7,6 +7,8 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -18,7 +20,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class OrderGenerator {
 
-    private static int orderSeq = 1000001;
     private Random intGen = new Random(37);
 
     private int getCustId() {
@@ -33,23 +34,8 @@ public class OrderGenerator {
         return BigDecimal.valueOf(intGen.nextInt(4901) + 100);
     }
 
-    private long getOrderTime(Date time) {
-        Calendar c = Calendar.getInstance();
-        c.setTime(time);
-        c.set(Calendar.MINUTE, -30);
-        return c.getTimeInMillis();
-    }
-
-    private long getPayTime(Date time) {
-        Calendar c = Calendar.getInstance();
-        c.setTime(time);
-        c.set(Calendar.MINUTE, -20);
-        return c.getTimeInMillis();
-    }
-
     public Order next() {
         Order rlt = new Order();
-        rlt.setOrderId(OrderGenerator.orderSeq++);
         rlt.setCustId(this.getCustId());
         rlt.setProductCode(this.getProdCode());
         rlt.setPayAmt(this.getPayAmt());
@@ -57,8 +43,8 @@ public class OrderGenerator {
         rlt.setTotalAmt(rlt.getPayAmt().add(rlt.getDiscount()));
 
         Date now = new Date();
-        rlt.setOrderTime(this.getOrderTime(now));
-        rlt.setPayTime(this.getPayTime(now));
+        rlt.setOrderTime(parse(format(now)));
+        rlt.setPayTime(rlt.getOrderTime());
         return rlt;
     }
 
@@ -86,7 +72,7 @@ public class OrderGenerator {
             }
 
             ProducerRecord<String, String> record = new ProducerRecord<>(
-                    "order_queue", order.getCustId() & 15, null, null, order.json(), null);
+                    "order_queue", order.getOrderId() & 15, null, null, order.json(), null);
             futures.add(producer.send(record));
 
             if (futures.size() == 100) {
@@ -105,10 +91,25 @@ public class OrderGenerator {
             }
 
             try {
-                TimeUnit.SECONDS.sleep(1);
+                TimeUnit.MILLISECONDS.sleep(30);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
+    }
+
+    private static String format(Date now) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        return sdf.format(now);
+    }
+
+    private static Date parse(String date)  {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        try {
+            return sdf.parse(date);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

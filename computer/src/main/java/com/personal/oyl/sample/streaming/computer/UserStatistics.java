@@ -16,7 +16,7 @@ public class UserStatistics implements Serializable {
     private Integer custId;
     private String minute;
     private Long numOfOrders;
-    private BigDecimal numOfOrderAmt;
+    private BigDecimal OrderAmt;
 
     public Integer getCustId() {
         return custId;
@@ -42,12 +42,12 @@ public class UserStatistics implements Serializable {
         this.numOfOrders = numOfOrders;
     }
 
-    public BigDecimal getNumOfOrderAmt() {
-        return numOfOrderAmt;
+    public BigDecimal getOrderAmt() {
+        return OrderAmt;
     }
 
-    public void setNumOfOrderAmt(BigDecimal numOfOrderAmt) {
-        this.numOfOrderAmt = numOfOrderAmt;
+    public void setOrderAmt(BigDecimal orderAmt) {
+        OrderAmt = orderAmt;
     }
 
     public String json() {
