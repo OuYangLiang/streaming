@@ -4,8 +4,12 @@ import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.functions.RuntimeContext;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.java.tuple.Tuple;
+import org.apache.flink.runtime.state.StateBackend;
+import org.apache.flink.runtime.state.filesystem.FsStateBackend;
+import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.timestamps.AscendingTimestampExtractor;
 import org.apache.flink.streaming.api.functions.windowing.ProcessAllWindowFunction;
@@ -36,6 +40,22 @@ public class StreamingComputer {
     public static void main(String[] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+
+        // 配置并行度
+        env.setParallelism(1);
+
+        // 配置checkpoint
+        env.enableCheckpointing(1000);
+        env.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);
+        env.getCheckpointConfig().setMinPauseBetweenCheckpoints(500);
+        env.getCheckpointConfig().setCheckpointTimeout(60000);
+        env.getCheckpointConfig().setMaxConcurrentCheckpoints(1);
+        env.getCheckpointConfig().enableExternalizedCheckpoints(CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
+        env.getCheckpointConfig().setFailOnCheckpointingErrors(true);
+
+        // 配置state backend
+        //env.setStateBackend(new MemoryStateBackend(5 * 1024 * 1024, true));
+        env.setStateBackend(((StateBackend)new FsStateBackend("file:///Users/john/flinkbackend", true)));
 
         FlinkKafkaConsumer011<String> kafkaConsumer = new FlinkKafkaConsumer011<>("order_queue", new SimpleStringSchema(), kafkaConsumeProps());
         kafkaConsumer.setStartFromEarliest();
@@ -72,7 +92,6 @@ public class StreamingComputer {
 
         env.execute();
 
-        System.out.println("Ready...");
     }
 
     private static Properties kafkaConsumeProps() {
