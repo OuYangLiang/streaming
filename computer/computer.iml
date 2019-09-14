@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module org.jetbrains.idea.maven.project.MavenProjectsManager.isMavenModule="true" type="JAVA_MODULE" version="4">
   <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_8">
-    <output url="file://$MODULE_DIR$/../computer/target/classes" />
-    <output-test url="file://$MODULE_DIR$/../computer/target/test-classes" />
-    <content url="file://$MODULE_DIR$/../computer">
-      <sourceFolder url="file://$MODULE_DIR$/../computer/src/main/java" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/../computer/src/main/resources" type="java-resource" />
-      <sourceFolder url="file://$MODULE_DIR$/../computer/src/test/java" isTestSource="true" />
-      <excludeFolder url="file://$MODULE_DIR$/../computer/target" />
+    <output url="file://$MODULE_DIR$/target/classes" />
+    <output-test url="file://$MODULE_DIR$/target/test-classes" />
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/src/main/java" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/resources" type="java-resource" />
+      <sourceFolder url="file://$MODULE_DIR$/src/test/java" isTestSource="true" />
+      <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
@@ -54,9 +54,7 @@
     <orderEntry type="library" name="Maven: org.apache.flink:flink-clients_2.11:1.8.1" level="project" />
     <orderEntry type="library" name="Maven: org.apache.flink:flink-optimizer_2.11:1.8.1" level="project" />
     <orderEntry type="library" name="Maven: org.apache.flink:flink-shaded-guava:18.0-6.0" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.flink:flink-connector-kafka-0.11_2.11:1.8.1" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.flink:flink-connector-kafka-0.10_2.11:1.8.1" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.flink:flink-connector-kafka-0.9_2.11:1.8.1" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.flink:flink-connector-kafka_2.11:1.8.1" level="project" />
     <orderEntry type="library" name="Maven: org.apache.flink:flink-connector-kafka-base_2.11:1.8.1" level="project" />
     <orderEntry type="library" name="Maven: org.apache.kafka:kafka-clients:0.11.0.0" level="project" />
     <orderEntry type="library" name="Maven: net.jpountz.lz4:lz4:1.3.0" level="project" />

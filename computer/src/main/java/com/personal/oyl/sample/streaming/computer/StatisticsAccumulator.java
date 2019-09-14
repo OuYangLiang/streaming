@@ -1,5 +1,6 @@
 package com.personal.oyl.sample.streaming.computer;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Set;
 
@@ -7,7 +8,7 @@ import java.util.Set;
  * @author OuYang Liang
  * @since 2019-09-04
  */
-public class StatisticsAccumulator {
+public class StatisticsAccumulator implements Serializable {
     private Long numOfOrders;
     private BigDecimal orderAmt;
     private Set<Integer> orderedCustId;

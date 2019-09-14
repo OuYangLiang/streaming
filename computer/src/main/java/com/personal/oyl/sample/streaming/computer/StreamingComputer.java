@@ -21,7 +21,7 @@ import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.streaming.connectors.elasticsearch.ElasticsearchSinkFunction;
 import org.apache.flink.streaming.connectors.elasticsearch.RequestIndexer;
 import org.apache.flink.streaming.connectors.elasticsearch6.ElasticsearchSink;
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer011;
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 import org.apache.flink.util.Collector;
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.index.IndexRequest;
@@ -48,17 +48,16 @@ public class StreamingComputer {
         env.enableCheckpointing(1000);
         env.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);
         env.getCheckpointConfig().setMinPauseBetweenCheckpoints(500);
-        env.getCheckpointConfig().setCheckpointTimeout(60000);
+        env.getCheckpointConfig().setCheckpointTimeout(6000);
         env.getCheckpointConfig().setMaxConcurrentCheckpoints(1);
         env.getCheckpointConfig().enableExternalizedCheckpoints(CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
         env.getCheckpointConfig().setFailOnCheckpointingErrors(true);
 
         // 配置state backend
-        //env.setStateBackend(new MemoryStateBackend(5 * 1024 * 1024, true));
-        env.setStateBackend(((StateBackend)new FsStateBackend("file:///Users/john/flinkbackend", true)));
+//        env.setStateBackend(((StateBackend)new MemoryStateBackend(5 * 1024 * 1024, false)));
+        env.setStateBackend(((StateBackend)new FsStateBackend("file:///Users/john/flinkbackend", false)));
 
-        FlinkKafkaConsumer011<String> kafkaConsumer = new FlinkKafkaConsumer011<>("order_queue", new SimpleStringSchema(), kafkaConsumeProps());
-        kafkaConsumer.setStartFromEarliest();
+        FlinkKafkaConsumer<String> kafkaConsumer = new FlinkKafkaConsumer<>("order_queue", new SimpleStringSchema(), kafkaConsumeProps());
 
         DataStream<String> ds = env.addSource(kafkaConsumer);
         DataStream<Order> ods = ds.map(Order::fromJson)
@@ -73,21 +72,21 @@ public class StreamingComputer {
 
         // 计算每分钟下单量、每分钟下单金额、每分钟下单客户数量
         ods.windowAll(TumblingEventTimeWindows.of(Time.seconds(60)))
+                .allowedLateness(Time.seconds(600)) // Very very important to fault tolerance
                 .aggregate(aggregationFunction(), processFunction())
-                .map(Statistics::json)
                 .addSink(esSinkBuilder(httpHosts, "minute_statistics").build());
 
         // 计算任意时刻，某客户在5分钟内的下单量、下单金额
         ods.keyBy("custId")
                 .window(SlidingEventTimeWindows.of(Time.seconds(300), Time.seconds(60)))
+                .allowedLateness(Time.seconds(600))
                 .aggregate(userAggregateFunction(), userProcessFunction())
-                .map(UserStatistics::json)
-                .addSink(esSinkBuilder(httpHosts, "user_statistics").build());
+                .addSink(esUserStatisticsSinkBuilder(httpHosts).build());
 
         // 计算任意时刻，5分钟内下单总量、下单总金额、下单客户数量
         ods.windowAll(SlidingEventTimeWindows.of(Time.seconds(300), Time.seconds(60)))
+                .allowedLateness(Time.seconds(600))
                 .aggregate(aggregationFunction(), processFunction())
-                .map(Statistics::json)
                 .addSink(esSinkBuilder(httpHosts, "total_statistics").build());
 
         env.execute();
@@ -99,7 +98,8 @@ public class StreamingComputer {
         properties.setProperty("bootstrap.servers", "localhost:9092");
         properties.setProperty("zookeeper.connect", "localhost:2181");
         properties.setProperty("group.id", "flink_streaming");
-        properties.setProperty("auto.offset.reset", "earliest");
+        properties.setProperty("auto.offset.reset", "latest");
+        properties.put("enable.auto.commit", "false");
         return properties;
     }
 
@@ -109,19 +109,43 @@ public class StreamingComputer {
         return httpHosts;
     }
 
-    private static ElasticsearchSink.Builder<String> esSinkBuilder(List<HttpHost> httpHosts, final String index) {
-        ElasticsearchSink.Builder<String> builder = new ElasticsearchSink.Builder<>(
+    private static ElasticsearchSink.Builder<UserStatistics> esUserStatisticsSinkBuilder(List<HttpHost> httpHosts) {
+        ElasticsearchSink.Builder<UserStatistics> builder = new ElasticsearchSink.Builder<>(
                 httpHosts,
-                new ElasticsearchSinkFunction<String>() {
-                    public IndexRequest createIndexRequest(String element) {
+                new ElasticsearchSinkFunction<UserStatistics>() {
+                    public IndexRequest createIndexRequest(UserStatistics element) {
                         return Requests.indexRequest()
-                                .index(index)
+                                .index("user_statistics")
                                 .type("doc")
-                                .source(element, XContentType.JSON);
+                                .id(element.getMinute() + "-" + element.getCustId())
+                                .source(element.json(), XContentType.JSON);
                     }
 
                     @Override
-                    public void process(String element, RuntimeContext ctx, RequestIndexer indexer) {
+                    public void process(UserStatistics element, RuntimeContext ctx, RequestIndexer indexer) {
+                        indexer.add(createIndexRequest(element));
+                    }
+                }
+        );
+
+        builder.setBulkFlushMaxActions(1);
+        return builder;
+    }
+
+    private static ElasticsearchSink.Builder<Statistics> esSinkBuilder(List<HttpHost> httpHosts, final String index) {
+        ElasticsearchSink.Builder<Statistics> builder = new ElasticsearchSink.Builder<>(
+                httpHosts,
+                new ElasticsearchSinkFunction<Statistics>() {
+                    public IndexRequest createIndexRequest(Statistics element) {
+                        return Requests.indexRequest()
+                                .index(index)
+                                .type("doc")
+                                .id(element.getMinute())
+                                .source(element.json(), XContentType.JSON);
+                    }
+
+                    @Override
+                    public void process(Statistics element, RuntimeContext ctx, RequestIndexer indexer) {
                         indexer.add(createIndexRequest(element));
                     }
                 }
@@ -224,7 +248,7 @@ public class StreamingComputer {
             @Override
             public void process(Context context, Iterable<Statistics> elements, Collector<Statistics> out) {
                 Statistics statistics = elements.iterator().next();
-                statistics.setMinute(format(context.window().getStart()));
+                statistics.setMinute(format(context.window().getEnd()));
                 out.collect(statistics);
             }
         };
@@ -237,7 +261,7 @@ public class StreamingComputer {
             public void process(Tuple tuple, Context context, Iterable<Map<Integer, UserStatistics>> elements, Collector<UserStatistics> out) {
                 for (Map.Entry<Integer, UserStatistics> entry : elements.iterator().next().entrySet()) {
                     UserStatistics statistics = entry.getValue();
-                    statistics.setMinute(format(context.window().getStart()));
+                    statistics.setMinute(format(context.window().getEnd()));
                     out.collect(statistics);
                 }
             }
