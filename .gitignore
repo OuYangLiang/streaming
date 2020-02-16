@@ -5,3 +5,7 @@ build
 .settings
 .DS_Store
 streaming.iml
+*.iws
+*.iml
+*.ipr
+/.idea/
